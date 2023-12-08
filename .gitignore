@@ -7,7 +7,7 @@ token_details/
 test.py
 test.txt
 
-.# Exclude self
+# Exclude self
 .gitignore
 
 # Exclude Docker ignore file
