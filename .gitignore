@@ -6,3 +6,6 @@ token_details/
 .env
 test.py
 test.txt
+
+.gitignore
+.dockerignore
