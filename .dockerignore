@@ -1,0 +1,5 @@
+# Exclude the "tests" folder
+logs/
+results_content/
+__pycache__/
+token_details/
