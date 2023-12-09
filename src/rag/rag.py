@@ -3,7 +3,6 @@ from src.rag.rag_ingestor import DataIngestor
 from src.rag.rag_engine import QueryEngineRAG
 from src.rag.prompts import query_prompt
 
-
 from langchain.callbacks import get_openai_callback
 
 class RAG:

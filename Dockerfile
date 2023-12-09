@@ -2,8 +2,6 @@ FROM python:3.10.6-slim-buster
 WORKDIR /app
 COPY . /app
 
-# Set environment variables
-
 RUN apt update -y
 
 RUN apt-get update -y && pip install -r requirements.txt

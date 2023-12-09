@@ -9,3 +9,4 @@ python-dotenv
 tiktoken
 psycopg2-binary
 SQLAlchemy==2.0.20
+pgvector

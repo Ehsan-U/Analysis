@@ -35,6 +35,7 @@ def process_text():
     
     refined_prompts =  rag.refine_prompts(data["company"], data["prompts"])
     prompt_results = rag.prompt_engine(refined_prompts) 
+    
     domains = get_domains(summary)
     # print(domains)
     return jsonify({"domains": domains, "summary": summary, 'refined_prompts': refined_prompts, "prompt_results": prompt_results})
@@ -43,11 +44,12 @@ def process_text():
 @app.route('/find_email_pattern', methods=["POST"])
 def process_emails():
     data = request.get_json()
-    domain = data["domain"]
-    emails = data["emails"]
 
-    result = email_processor.process_emails(emails)
-    return jsonify({domain: result})
+    result= dict() 
+    for domain in data: 
+        result[domain] =  email_processor.process_emails(data[domain])
+    
+    return jsonify(result)
 
 
 @app.route('/query', methods=["POST"])
@@ -56,4 +58,4 @@ def process_query():
     return jsonify({"domain": "emails"})
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True, port=5000)
+    app.run(host="0.0.0.0", debug=True, port=5003)
