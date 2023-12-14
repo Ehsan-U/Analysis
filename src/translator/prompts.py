@@ -1,5 +1,4 @@
 from langchain.prompts import PromptTemplate
-# Chain 1
 
 translation_template = """
 For the company called: {company}

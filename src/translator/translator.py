@@ -74,14 +74,19 @@ class Translator:
     def translate(self, company_name: str, titles: list):
         logging.info("Translating titles")
         try:
+            #Store the indexes that has actual words in their position
             marked_indexes = self._mark_titles(titles)
+
+            #Process all original list and remove empty spaces
             processed_titles = self._preprocess_titles(titles)
             if len(processed_titles) == 0:
                 return []
 
+            #convert the list of titles into string and send to translation chain
             str_titles = "\n".join(processed_titles)
             translated_titles =  self._chain.run({"text":str_titles, "company": company_name})
 
+            #Add the processed titles to the original list and return the translated information
             return self._postprocess_titles(titles, translated_titles, marked_indexes)
 
         except Exception as excep:

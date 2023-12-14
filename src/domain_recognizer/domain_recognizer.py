@@ -50,18 +50,26 @@ class DomainRecognizer:
             self._chain = LLMChain(llm=self._llm, prompt=recognition_prompt, output_key = "final_result", output_parser=output_parser, verbose=False)
         except Exception as excep:
             logging.error(f"Error initializing recognition chain: {excep}")
-
+    
+    def _preprocess_domains(self, domains: list):
+        processed_titles = [domains[i].strip() for i in range(len(domains)) if domains[i].strip() != ""]
+        return processed_titles
 
     def recognize_company_domain(self, company_name, domains: list):
         logging.info("Recognizing domains")
         try:
+            #Remove domains are empty spaces
+            domains = self._preprocess_domains(domains)
+
+            #If no domains are available then just return empty list
             if len(domains) == 0:
                 return []
             
+            #Convert domains into str and run the chain
             str_domains = "\n".join(domains)
-
             filtered_result = self._chain({"text":str_domains, "company" : company_name})
             
+            #Filter and access the final output
             return filtered_result["final_result"][0]
 
         except Exception as excep:
