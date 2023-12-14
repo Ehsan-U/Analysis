@@ -53,7 +53,7 @@ class Translator:
         try:
 
             output_parser = CommaSeparatedListOutputParser()        
-            self._chain = LLMChain(llm=self._llm, prompt=translation_prompt, output_key = "final_result", output_parser=output_parser, verbose=True)
+            self._chain = LLMChain(llm=self._llm, prompt=translation_prompt, output_key = "final_result", output_parser=output_parser, verbose=False)
         
         except Exception as excep:
             logging.error(f"Error initializing translation chain: {excep}")
@@ -77,11 +77,10 @@ class Translator:
             marked_indexes = self._mark_titles(titles)
             processed_titles = self._preprocess_titles(titles)
             if len(processed_titles) == 0:
-                return None
+                return []
 
             str_titles = "\n".join(processed_titles)
             translated_titles =  self._chain.run({"text":str_titles, "company": company_name})
-            # print(translated_titles)
 
             return self._postprocess_titles(titles, translated_titles, marked_indexes)
 

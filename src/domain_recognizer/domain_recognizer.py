@@ -47,7 +47,7 @@ class DomainRecognizer:
         logging.info("Initializing domain recognition chain")
         try:
             output_parser = CommaSeparatedListOutputParser()        
-            self._chain = LLMChain(llm=self._llm, prompt=recognition_prompt, output_key = "final_result", output_parser=output_parser, verbose=True)
+            self._chain = LLMChain(llm=self._llm, prompt=recognition_prompt, output_key = "final_result", output_parser=output_parser, verbose=False)
         except Exception as excep:
             logging.error(f"Error initializing recognition chain: {excep}")
 
@@ -56,7 +56,7 @@ class DomainRecognizer:
         logging.info("Recognizing domains")
         try:
             if len(domains) == 0:
-                return None
+                return []
             
             str_domains = "\n".join(domains)
 

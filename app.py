@@ -65,33 +65,48 @@ def process_emails():
 @app.route('/convert_titles', methods=["POST"])
 def process_titles():
     data = request.get_json()
-    company_name = data["company_name"]
-    titles = data["prospects"]
-
-    #
-    if len(titles) == 0:
-        return jsonify({"titles_converted": None})
     
+    for key in data:
+        company_name = key
+        titles = data[key]
+
+    # if there are no titles available then just return empty list
+    if len(titles) == 0:
+        return jsonify({company_name: []})
+    
+    #Translate the titles and return a list of translated titles
     translated_titles = translator.translate(company_name, titles)
 
-    return jsonify({"titles_converted": translated_titles})
+    return jsonify({company_name: translated_titles})
 
 @app.route('/filter_domains', methods=["POST"])
 def process_domains():
     data = request.get_json()
-    domains = data["domains"]
-    company_name = data["company_name"]
+    #company name as key and list of domains as value
+
+    for key in data:
+        company_name = key
+        domains = data[key]
+
+    #Recognize the company domain from a potential domains
     domain = domain_recognizer.recognize_company_domain(company_name, domains)
 
     return jsonify({company_name: domain})
 
 @app.route('/prompt', methods=["POST"])
-def process_query():
+def process_prompt():
     data = request.get_json()
     
-
-    return jsonify({"domain": "emails"})
-
+    for key in data:
+        company_name = key
+        prompts = data[key]
+    
+    #Refine the prompts to make some clarifications
+    refined_prompts =  rag.refine_prompts(company_name, prompts)
+    prompt_results = rag.prompt_engine(refined_prompts) 
+    
+    #Return output with company name and a list
+    return jsonify({company_name: prompt_results})
 
 
 if __name__ == '__main__':

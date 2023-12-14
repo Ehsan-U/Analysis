@@ -5,7 +5,7 @@ translation_template = """
 For the company called: {company}
 Given the set of pharses in different languages delimited by triple backticks, Make sure that all of them are converted to English.
 I want the output as a comma seperated list for python.
-Make sure that the number of translated pharses are the same as the number of pharses. That means if for any given pharase, you don't know the translation then just write them as is.
+Make sure that the number of translated pharses are the same as the original number of pharses. Hence, do not skip any pharse to translate. 
 ```
 {text}
 ```

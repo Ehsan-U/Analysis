@@ -64,7 +64,7 @@ class EmailProcesssor:
             
 
             self.main_chain = SimpleSequentialChain(chains=[chain_one, chain_two, chain_three],
-                                                verbose=True
+                                                verbose=False
                                                 )
         except Exception as excep:
             logging.error(f"Error initializing chains: {excep}")
