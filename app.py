@@ -78,7 +78,7 @@ def process_titles():
 
     # if there are no titles available then just return empty list
     if len(titles) == 0:
-        return jsonify({company_name: []})
+        return jsonify({company_name: prospects})
     
     #Translate the titles and return a list of translated titles
     translated_titles = translator.translate(company_name, titles)
@@ -120,4 +120,4 @@ def process_prompt():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0" , debug=True, port=5000)
+    app.run( debug=True, port=5000)
