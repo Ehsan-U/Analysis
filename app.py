@@ -56,7 +56,7 @@ def process_emails():
     data = request.get_json()
 
     #Go through every domain in json and process its emails.
-    result= dict() 
+    result= dict()
     for domain in data: 
         result[domain] =  email_processor.process_emails(data[domain])
     
@@ -66,9 +66,15 @@ def process_emails():
 def process_titles():
     data = request.get_json()
     
+    #get company name and prospects list extracted
     for key in data:
         company_name = key
-        titles = data[key]
+        prospects = data[key]
+
+    #Extract all the titles from prospects
+    titles = []
+    for prospect in prospects:
+        titles.append(prospect["title"])
 
     # if there are no titles available then just return empty list
     if len(titles) == 0:
@@ -77,7 +83,11 @@ def process_titles():
     #Translate the titles and return a list of translated titles
     translated_titles = translator.translate(company_name, titles)
 
-    return jsonify({company_name: translated_titles})
+    #Replace the titles in those same positions
+    for i, prospect in enumerate(prospects):
+        prospect["title"] =  translated_titles[i]
+
+    return jsonify({company_name: prospects})
 
 @app.route('/filter_domains', methods=["POST"])
 def process_domains():
@@ -110,4 +120,4 @@ def process_prompt():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0" , debug=True, port=5000)
