@@ -80,7 +80,7 @@ class Translator:
             #Process all original list and remove empty spaces
             processed_titles = self._preprocess_titles(titles)
             if len(processed_titles) == 0:
-                return []
+                return titles
 
             #convert the list of titles into string and send to translation chain
             str_titles = "\n".join(processed_titles)
