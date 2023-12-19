@@ -2,10 +2,11 @@ from langchain.prompts import ChatPromptTemplate
 # Chain 1
 first_prompt = ChatPromptTemplate.from_template(
 """
-Given the set of email addresses delimited by triple backticks identify all the email addresses that have the names of employees in it. Make sure to not included any generic email address for a product or department.
-Example emails that I am looking for are like these which has some reference to the employee name: johnDoe@mckinsey.com, j.doe@ibm.com, john.d@tata.co.in 
-Only output the email addresses that you think have the names of employees in them
-
+Given the set of company email addresses delimited by triple backticks identify all the email addresses that are for company employees. These employee emails have the names of employees in them. 
+Make sure to not included any generic email address for a product or department.
+Example emails that I am looking for are like the folowing email addresses which have some reference to the employee names: johnDoe@mckinsey.com, j.doe@ibm.com, john.d@tata.co.in 
+Note: These names can be from any language and culture so anything email address has a name in it then keep it.
+Only output the email addresses that you think have the names of company employees in them.
 ```
 {docs}
 ```

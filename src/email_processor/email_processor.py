@@ -64,7 +64,7 @@ class EmailProcesssor:
             
 
             self.main_chain = SimpleSequentialChain(chains=[chain_one, chain_two, chain_three],
-                                                verbose=False
+                                                verbose=True
                                                 )
         except Exception as excep:
             logging.error(f"Error initializing chains: {excep}")
@@ -79,6 +79,9 @@ class EmailProcesssor:
         Returns:
             str: A post-processed string where certain placeholders and formats have been standardized.
         """
+        #return none if no patterns were found
+        if patterns.strip().lower() == "NONE".lower():
+            return None
 
         patterns = patterns.strip().split("@")[0]
         patterns = patterns.replace("[First Name]", "f")
@@ -100,15 +103,14 @@ class EmailProcesssor:
         """
         logging.info("Finding patterns in emails")
         try:
+            if len(emails) == 0:
+                return None
+            
             #Recieve output as comma seperated string.
             patterns =  self.main_chain.run(emails)
 
             #take the first pattern only
             patterns = patterns[0]
-
-            #return none if no patterns were found
-            if patterns.strip().lower() == "NONE".lower():
-                return None
             
             return self._post_process_text(patterns)
         except Exception as excep:

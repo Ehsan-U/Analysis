@@ -80,9 +80,12 @@ class QueryEngineRAG:
         """
         logging.info("Intializing query engine")
         try:
-            self._query_engine = RetrievalQA.from_chain_type(llm=self._llm, chain_type="stuff", retriever=self._vector_store.as_retriever(search_kwargs={'k': 10, 'score_threshold': 5}))
+            self._query_engine = RetrievalQA.from_chain_type(llm=self._llm, chain_type="stuff", retriever=self._vector_store.as_retriever(search_kwargs={'k': 100, 'score_threshold': 7}))
         except Exception as excep:
             logging.error(f"Error intializing query engine: {excep}")
+
+    def _post_process_result(self, result):
+        return result if result.strip() != "<no answer>" else ""
 
     def query(self, query_string: str):
         """
@@ -95,7 +98,8 @@ class QueryEngineRAG:
             The result of the query.
         """
         try: 
-            return self._query_engine.run(query_string)
+            result = self._query_engine.run(query_string)
+            return self._post_process_result(result) 
         except Exception as excep:
             logging.error(f"Error querying the query engine: {excep}")
         

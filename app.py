@@ -20,7 +20,6 @@ setup_dict = {
     "collection_name": "ab_testing",
     "pre_delete_collection": True,
     "openAI_model_name": "gpt-3.5-turbo-1106",
-    "system_message": "You are an AI agent responsible for managing mining industry data"
 }
 
 logging.info("Intializing RAG engine")
@@ -40,16 +39,16 @@ def process_text():
     data = request.get_json()
 
     #Ingest data into the vector database
-    summary, ingestion_tokens = rag.ingest_data_into_db(data["text"], data["company"])
-    
+    summary, ingestion_tokens = rag.ingest_data_into_db(data["text"], data["company"], data["keywords"])
+    # print(summary)
+
     #Refine the prompts so that the query can be answered for the particular company then prompt the prompt engine
     refined_prompts =  rag.refine_prompts(data["company"], data["prompts"])
     prompt_results = rag.prompt_engine(refined_prompts) 
     
     #Get all the domains that were found in the summarized text
-    domains = get_domains(summary)
-    return jsonify({"domains": domains, "summary": summary, 'refined_prompts': refined_prompts, "prompt_results": prompt_results})
-
+    # domains = get_domains(summary)
+    return jsonify(prompt_results)
 
 @app.route('/find_email_pattern', methods=["POST"])
 def process_emails():
@@ -58,6 +57,7 @@ def process_emails():
     #Go through every domain in json and process its emails.
     result= dict()
     for domain in data: 
+        print(data[domain])
         result[domain] =  email_processor.process_emails(data[domain])
     
     return jsonify(result)
@@ -76,7 +76,7 @@ def process_titles():
     for prospect in prospects:
         titles.append(prospect["title"])
 
-    # if there are no titles available then just return empty list
+    # if there are no titles available then just return the same information back
     if len(titles) == 0:
         return jsonify({company_name: prospects})
     
@@ -120,4 +120,4 @@ def process_prompt():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True, port=5000)
+    app.run( debug=True, port=5000)

@@ -56,6 +56,12 @@ class DataIngestor:
         except Exception as excep:
             logging.error(f"Error establishing connection to open ai models for ingestor: {excep}")
 
+    def _create_content_extraction_list(self, company_name: str, keywords: list):
+        final_string = ""
+        for i, key in enumerate(keywords):
+            content = f"{i+1}. Information about {key} for {company_name}: \n"
+            final_string += content
+        return final_string[:-1]
 
     def define_summary_text_splitter(self):
         """
@@ -88,36 +94,6 @@ class DataIngestor:
                                 connection_string=connection_string,
                                 pre_delete_collection = pre_delete_collection,
                                 )
-
-
-    def _text_preprocessor(self, text):
-        """
-        Preprocesses the given text by removing HTTP links, empty brackets, and normalizing spaces.
-
-        Args:
-            text (str): The text to preprocess.
-
-        Returns:
-            str: The cleaned and preprocessed text.
-        """
-        # Define a regular expression pattern to match HTTP links
-        http_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        # Use re.sub to replace HTTP links with an empty string
-        cleaned_text = re.sub(http_pattern, '', text)
-        # Define a regular expression pattern to match empty square brackets
-        empty_brackets_pattern = r'\[\s*\]'
-        # Use re.sub to replace empty square brackets with an empty string
-        cleaned_text = re.sub(empty_brackets_pattern, '', cleaned_text)
-        # Define a regular expression pattern to match square brackets without alphabets
-        no_alphabet_brackets_pattern = r'\[[^\w]*\]'
-        # Use re.sub to replace square brackets without alphabets with an empty string
-        cleaned_text = re.sub(no_alphabet_brackets_pattern, '', cleaned_text)
-        # Use a regular expression to replace multiple spaces with a single space
-        cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
-        # Use regular expression to replace consecutive "\n" with a single "\n"
-        cleaned_text = re.sub(r'\n+', '\n', cleaned_text)
-
-        return cleaned_text
 
     def _initialize_summarizer(self):
         """
@@ -155,7 +131,36 @@ class DataIngestor:
             return_intermediate_steps=False,
         )
 
-    def _summarize(self, text, company):
+    def _text_preprocessor(self, text):
+        """
+        Preprocesses the given text by removing HTTP links, empty brackets, and normalizing spaces.
+
+        Args:
+            text (str): The text to preprocess.
+
+        Returns:
+            str: The cleaned and preprocessed text.
+        """
+        # Define a regular expression pattern to match HTTP links
+        http_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        # Use re.sub to replace HTTP links with an empty string
+        cleaned_text = re.sub(http_pattern, '', text)
+        # Define a regular expression pattern to match empty square brackets
+        empty_brackets_pattern = r'\[\s*\]'
+        # Use re.sub to replace empty square brackets with an empty string
+        cleaned_text = re.sub(empty_brackets_pattern, '', cleaned_text)
+        # Define a regular expression pattern to match square brackets without alphabets
+        no_alphabet_brackets_pattern = r'\[[^\w]*\]'
+        # Use re.sub to replace square brackets without alphabets with an empty string
+        cleaned_text = re.sub(no_alphabet_brackets_pattern, '', cleaned_text)
+        # Use a regular expression to replace multiple spaces with a single space
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+        # Use regular expression to replace consecutive "\n" with a single "\n"
+        cleaned_text = re.sub(r'\n+', '\n', cleaned_text)
+
+        return cleaned_text
+
+    def _summarize(self, text: str, company_name: str, keywords: list):
         """
         Summarizes the given split documents for a specified company.
 
@@ -166,11 +171,13 @@ class DataIngestor:
         Returns:
             The summarized content.
         """
-
+        information_to_extract = self._create_content_extraction_list(company_name, keywords)
         split_documents = self._sum_text_splitter.create_documents([text])
-        return self._map_reduce_chain.run(input_documents=split_documents, company = company)
+        for idx in range(len(split_documents)):
+            split_documents[idx].metadata['company_name'] = company_name
+        return self._map_reduce_chain.run(input_documents=split_documents, company_name = company_name, information_to_extract = information_to_extract)
 
-    def add(self, text, company):
+    def add(self, text, company_name, keywords):
         """
         Preprocesses, summarizes, and adds the given text to the vector database.
 
@@ -181,12 +188,13 @@ class DataIngestor:
         Returns:
             A tuple containing the summarized content and token consumption information.
         """
+        
 
         text = self._text_preprocessor(text)
 
         with get_openai_callback() as cb: 
             logging.info("Summarizing the text for vector database")
-            summarized_content = self._summarize(text, company)
+            summarized_content = self._summarize(text, company_name, keywords)
             
             logging.info("Adding documents into the vector database")
             split_docs = self._db_text_splitter.create_documents([summarized_content])
