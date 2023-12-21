@@ -42,12 +42,13 @@ def process_text():
     summary, ingestion_tokens = rag.ingest_data_into_db(data["text"], data["company"], data["keywords"])
     # print(summary)
 
+    prompts = rag.create_prompts_from_keywords(data["company"], data["keywords"])
+
     #Refine the prompts so that the query can be answered for the particular company then prompt the prompt engine
-    refined_prompts =  rag.refine_prompts(data["company"], data["prompts"])
-    prompt_results = rag.prompt_engine(refined_prompts) 
-    
-    #Get all the domains that were found in the summarized text
-    # domains = get_domains(summary)
+    # refined_prompts =  rag.refine_prompts(data["company"], data["prompts"])
+    refined_prompts = rag.refine_prompts(data["company"], prompts)
+    prompt_results = rag.prompt_engine(refined_prompts, data["keywords"])
+
     return jsonify(prompt_results)
 
 @app.route('/find_email_pattern', methods=["POST"])
@@ -57,7 +58,6 @@ def process_emails():
     #Go through every domain in json and process its emails.
     result= dict()
     for domain in data: 
-        print(data[domain])
         result[domain] =  email_processor.process_emails(data[domain])
     
     return jsonify(result)

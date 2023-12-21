@@ -1,9 +1,11 @@
 from src.logger import logging
 from src.rag.rag_ingestor import DataIngestor
 from src.rag.rag_engine import QueryEngineRAG
-from src.rag.prompts import query_prompt
+from src.rag.keyword_enhancer import KeywordEnhancer
+from src.rag.prompts_query import query_prompt
 
 from langchain.callbacks import get_openai_callback
+from langchain.chains import LLMChain
 
 class RAG:
     """
@@ -13,6 +15,7 @@ class RAG:
     def __init__(self, setup_dict):
         self._intialize_data_ingestor(setup_dict)
         self._initialize_query_engine(setup_dict)
+        self._intialize_keyword_enhancer(setup_dict)
 
     def _initialize_query_engine(self, setup_dict):
         """
@@ -28,6 +31,13 @@ class RAG:
         logging.info("Establishing connection to Data Ingestor")
         self._ingestor = DataIngestor(setup_dict)
 
+    def _intialize_keyword_enhancer(self, setup_dict):
+        """
+        establishes connection to a keyword_enhancer to shape questions
+        """
+        logging.info("Establishing connection to keyword enhancer")
+        self._enhancer = KeywordEnhancer(setup_dict)
+
     def ingest_data_into_db(self, text:str, company_name:str, keywords: list):
         """
         saves the scraped data into the vector database
@@ -37,7 +47,7 @@ class RAG:
 
         return self._ingestor.add(text, company_name, keywords)
 
-    def prompt_engine(self, prompts:tuple):
+    def prompt_engine(self, refined_prompts:list, keywords:list):
         """
         outputs prompt results for different prompts given by the user
         Args: 
@@ -47,11 +57,20 @@ class RAG:
         """
         try:
             prompt_results = dict()
-            for prompt in prompts:
-                prompt_results[prompt]= self._engine.query(prompt)
+            for i, prompt in enumerate(refined_prompts):
+                prompt_results[keywords[i]]= self._engine.query(prompt)
             return prompt_results
         except Exception as e:
             logging.error(f"Error while prompting the querying engine: {e}")
+
+    def create_prompts_from_keywords(self, company_name, keywords):
+        try:
+            questions = []
+            for keyword in keywords:
+                questions.append(self._enhancer.enhance(company_name, keyword))
+            return questions
+        except Exception as e:
+            logging.error(f"Error while creating questions: {e}")        
 
     def refine_prompts(self, company_name, prompts):
         """
@@ -65,7 +84,6 @@ class RAG:
         try:
             refined_prompts = []
             for prompt in prompts:
-                
                 messages = query_prompt.format(company_name = company_name, query = prompt)
                 
                 refined_prompts.append(messages)

@@ -27,19 +27,20 @@ Helpful Answer:
 
 input_vars = ["company_name", "docs"]
 reduce_prompt = PromptTemplate(input_variables=input_vars, template=reduce_template)
-query_template = """
-If you do not know the answer then disregard everything you read below and just output: <no answer>.
 
-For the company called {company_name}, answer my query below.
-Note: If the query is asking for the company's domain, it means it's asking for the company's email domain.
-for example, in the email sawaiz@ibm.co.uk, the domain would be ibm.co.uk.
-Give me a detailed answer for the query, output everything that you know. Do not skip anything on the topic
-In your output, make sure you are writing each piece of information line by line like a list of facts.
-<QUERY>: {query}
-"""
+# query_template = """
+# If you do not know the answer then disregard everything you read below and just output: <no answer>.
 
-input_vars = ["company_name", "query"]
-query_prompt = PromptTemplate(input_variables=input_vars, template=query_template)
+# For the company called {company_name}, answer my query below.
+# Note: If the query is asking for the company's domain, it means it's asking for the company's email domain.
+# for example, in the email sawaiz@ibm.co.uk, the domain would be ibm.co.uk.
+# Give me a detailed answer for the query, output everything that you know. Do not skip anything on the topic
+# In your output, make sure you are writing each piece of information line by line like a list of facts.
+# <QUERY>: {query}
+# """
+
+# input_vars = ["company_name", "query"]
+# query_prompt = PromptTemplate(input_variables=input_vars, template=query_template)
 
 # map_template = """The following is a set of documents about the company called {company}: 
 #                 {docs}

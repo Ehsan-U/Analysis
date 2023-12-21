@@ -191,12 +191,12 @@ class DataIngestor:
         
 
         text = self._text_preprocessor(text)
-
         with get_openai_callback() as cb: 
             logging.info("Summarizing the text for vector database")
             summarized_content = self._summarize(text, company_name, keywords)
             
             logging.info("Adding documents into the vector database")
+            
             split_docs = self._db_text_splitter.create_documents([summarized_content])
             if len(split_docs) > 4:
                 logging.warning(f"Too many chunks were made for summarization: {len(split_docs)}")
