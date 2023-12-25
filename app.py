@@ -23,6 +23,7 @@ app = Flask(__name__)
 setup_dict = {
     "connection_string" : os.environ["MONGO_CONNECTION_STRING"],
     "db_name": os.environ["db_name"],
+    "collection_name": os.environ["collection_name"],
 }
 logging.info("Intializing database connection")
 db = MongoDBManager(setup_dict)
@@ -47,13 +48,13 @@ domain_recognizer = DomainRecognizer(setup_dict)
 def process_text():
     data = request.get_json()
 
-    #Ingest data into the vector database
+    #Summarize all the information in the scrapped data
     summary = summarizer.process(data["text"], data["company"], data["keywords"])
 
     #Extract all information and make a dictionary with keywords as keys
-    output = extract_information(summary, data["keywords"])
+    response_data = extract_information(summary, data["keywords"])
 
-    return jsonify(output)
+    return jsonify(response_data)
 
 @app.route('/store_in_db', methods=["POST"])
 def ingest():
@@ -75,21 +76,20 @@ def retrieve():
     data = request.get_json()
 
     #retrieve a document through company name
-    #Ingest data into the database
-    result = db.retrieve(data["company"])
+    response_data = db.retrieve(data["company"])
 
-    return jsonify(result)
+    return jsonify(response_data)
 
 @app.route('/find_email_pattern', methods=["POST"])
 def process_emails():
     data = request.get_json()
 
     #Go through every domain in json and process its emails.
-    result= dict()
+    response_data= dict()
     for domain in data: 
-        result[domain] = email_processor.process_emails(data[domain])
+        response_data[domain] = email_processor.process_emails(data[domain])
     
-    return jsonify(result)
+    return jsonify(response_data)
 
 @app.route('/convert_titles', methods=["POST"])
 def process_titles():

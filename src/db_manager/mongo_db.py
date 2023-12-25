@@ -1,4 +1,5 @@
 import pymongo
+from src.logger import logging
 
 class MongoDBManager:
     def __init__(self, setup_dict):
@@ -19,8 +20,8 @@ class MongoDBManager:
 
         # MongoDB connection details
         self.client = pymongo.MongoClient(setup_dict["connection_string"])
-        self._collection = None
         self._create_database(setup_dict["db_name"])
+        self._create_collection(setup_dict["collection_name"])
 
     def _create_database(self, database_name):
         """
@@ -33,11 +34,14 @@ class MongoDBManager:
             manager = MongoDBManager(setup_dict)
             manager._create_database("my_database")
         """
-        # Create or get a reference to the specified database
-        self._database = self.client[database_name]
-        print(f"Database '{database_name}' created or retrieved successfully.")
+        logging.info("Establishing connection to mongodb database")
+        try:
+            # Create or get a reference to the specified database
+            self._database = self.client[database_name]
+        except Exception as e:
+            logging.error("Error establishing connection to mongo db")
 
-    def create_collection(self, collection_name):
+    def _create_collection(self, collection_name):
         """
         Creates or retrieves a reference to the specified collection within the database.
 
@@ -52,9 +56,11 @@ class MongoDBManager:
             collection = manager.create_collection("my_collection")
         """
         # Create or get a reference to the specified collection within the database
-        collection = self._database[collection_name]
-        print(f"Collection '{collection_name}' created or retrieved successfully.")
-        return collection
+        logging.info("Connecting and creating a collection from the database")
+        try:
+            self._collection = self._database[collection_name]
+        except Exception as e:
+            logging.error("Error connecting or creating a collection from the database")
 
     def upsert_data(self, company_name, data):
         """
@@ -72,16 +78,11 @@ class MongoDBManager:
             manager.upsert_data("companyA", {"key": "value"})
         """
 
-        
-        #Define collection based on company name
-        collection = self.create_collection(company_name)
-
-        # Insert data into the specified collection
+        # Insert data into the specified collection keeping company name as id
         data["_id"] = company_name
         data = {"$set": data}
 
-        result = collection.update_one({"_id": company_name}, data, upsert=True)
-        print(f"Inserted document ID: {result}")
+        result = self._collection.update_one({"_id": company_name}, data, upsert=True)
         return "Success"
 
     def retrieve(self, company_name):
@@ -99,8 +100,7 @@ class MongoDBManager:
             document = manager.retrieve("companyA")
         """
     
-        collection = self.create_collection(company_name)
-        return collection.find_one({"_id": company_name})
+        return self._collection.find_one({"_id": company_name})
 
     def close_connection(self):
         """
