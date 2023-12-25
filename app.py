@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 load_dotenv() #call this before importing RAG class
 
-from src.rag.rag import RAG
+from src.summarizer.summarization_tool import Summarizer
+from src.db_manager.mongo_db import MongoDBManager
+
 from src.logger import logging
 from langchain.callbacks import get_openai_callback
 from src.utils import connect_to_token_df, get_domains
@@ -12,18 +14,25 @@ from src.translator.translator import Translator
 from src.domain_recognizer.domain_recognizer import DomainRecognizer
 
 from src.logger import logging
+from src.utils import extract_information
 
+import os
 
 app = Flask(__name__)
 
 setup_dict = {
-    "collection_name": "ab_testing",
-    "pre_delete_collection": True,
+    "connection_string" : os.environ["MONGO_CONNECTION_STRING"],
+    "db_name": os.environ["db_name"],
+}
+logging.info("Intializing database connection")
+db = MongoDBManager(setup_dict)
+
+setup_dict = {
     "openAI_model_name": "gpt-3.5-turbo-1106",
 }
 
 logging.info("Intializing RAG engine")
-rag = RAG(setup_dict)
+summarizer = Summarizer(setup_dict)
 
 logging.info("Intializing Email processor")
 email_processor = EmailProcesssor(setup_dict)
@@ -39,17 +48,37 @@ def process_text():
     data = request.get_json()
 
     #Ingest data into the vector database
-    summary, ingestion_tokens = rag.ingest_data_into_db(data["text"], data["company"], data["keywords"])
-    # print(summary)
+    summary = summarizer.process(data["text"], data["company"], data["keywords"])
 
-    prompts = rag.create_prompts_from_keywords(data["company"], data["keywords"])
+    #Extract all information and make a dictionary with keywords as keys
+    output = extract_information(summary, data["keywords"])
 
-    #Refine the prompts so that the query can be answered for the particular company then prompt the prompt engine
-    # refined_prompts =  rag.refine_prompts(data["company"], data["prompts"])
-    refined_prompts = rag.refine_prompts(data["company"], prompts)
-    prompt_results = rag.prompt_engine(refined_prompts, data["keywords"])
+    return jsonify(output)
 
-    return jsonify(prompt_results)
+@app.route('/store_in_db', methods=["POST"])
+def ingest():
+    data = request.get_json()
+
+    #Ingest data into the database
+    #data["summary"] is the <keyword>: <extracted information> pairs
+    try:
+        db.upsert_data(data["company"], data["summary"])
+        response_data = {'message': 'Record created successfully'}
+    except Exception as excep:
+        logging.error(f"Error processing ingestion request, {excep}")
+        response_data = {'message': 'Record creation was not successful'}
+
+    return jsonify(response_data)
+
+@app.route('/retrieve_from_db', methods=["POST"])
+def retrieve():
+    data = request.get_json()
+
+    #retrieve a document through company name
+    #Ingest data into the database
+    result = db.retrieve(data["company"])
+
+    return jsonify(result)
 
 @app.route('/find_email_pattern', methods=["POST"])
 def process_emails():
@@ -58,7 +87,7 @@ def process_emails():
     #Go through every domain in json and process its emails.
     result= dict()
     for domain in data: 
-        result[domain] =  email_processor.process_emails(data[domain])
+        result[domain] = email_processor.process_emails(data[domain])
     
     return jsonify(result)
 
@@ -102,21 +131,6 @@ def process_domains():
     domain = domain_recognizer.recognize_company_domain(company_name, domains)
 
     return jsonify({company_name: domain})
-
-@app.route('/prompt', methods=["POST"])
-def process_prompt():
-    data = request.get_json()
-    
-    for key in data:
-        company_name = key
-        prompts = data[key]
-    
-    #Refine the prompts to make some clarifications
-    refined_prompts =  rag.refine_prompts(company_name, prompts)
-    prompt_results = rag.prompt_engine(refined_prompts) 
-    
-    #Return output with company name and a list
-    return jsonify({company_name: prompt_results})
 
 
 if __name__ == '__main__':

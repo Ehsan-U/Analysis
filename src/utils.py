@@ -35,3 +35,29 @@ def get_domains(summary):
     domains = [item for item in domains if item.lower() != "none"]
     return domains
 
+import re
+import json
+
+def extract_information(text, keywords):
+    information = dict()
+    current_key = None
+    pattern = re.compile(r'^\d+\.\s')
+    lines = text.split('\n')
+    i = 0 
+    for line in lines:
+        # Check if the line matches the pattern "Number. Information about..."
+        match = pattern.match(line)
+        if match:
+            current_key = keywords[i] 
+            i+=1
+            information[current_key] = []
+        elif current_key != None:
+            information[current_key].append(line)
+
+    for key in information:
+        content = "\n".join(information[key])
+        if content.strip("-").strip() == "NONE":
+            information[key] = ""
+        else:
+            information[key] = content
+    return information

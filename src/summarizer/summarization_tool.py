@@ -2,7 +2,7 @@ import os
 import re
 import openai
 from src.logger import logging
-from src.rag.prompts import map_prompt, reduce_prompt
+from src.summarizer.summarizer_prompts import map_prompt, reduce_prompt
 
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import PGVector
@@ -19,15 +19,14 @@ from langchain.callbacks import get_openai_callback
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-CONNECTION_STRING = os.getenv("CONNECTION_STRING_VECTOR_DB")
 
-class DataIngestor:
+class Summarizer:
     """
-    This is a data ingestor call that is responsible for preprocess, split and store data into the vector database
+    This is a document summarizer that is responsible summarizing the scrapped text
     """
     def __init__(self, user_settings:dict):
         """
-        Initializes the DataIngestor with user settings.
+        Initializes the summarizer with user settings.
 
         Args:
             user_settings (dict): A dictionary containing settings for the ingestor, such as the OpenAI model name and collection name for the vector store.
@@ -35,9 +34,7 @@ class DataIngestor:
 
         self._reduction_max_tokens = 4000
         self.connect_to_llm(user_settings["openAI_model_name"])
-        self.connect_to_vector_store(CONNECTION_STRING, user_settings["collection_name"], user_settings["pre_delete_collection"])
         self.define_summary_text_splitter()
-        self.define_db_text_splitter()
         self._initialize_summarizer()
 
     def connect_to_llm(self, model_name:str):
@@ -70,30 +67,6 @@ class DataIngestor:
         self._sum_text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
                                 chunk_size=8000, chunk_overlap=0.5
                             )
-    
-    def define_db_text_splitter(self):
-        """
-        Defines text splitter for when we are splitting to store into the vector database
-        """
-        self._db_text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-                                chunk_size=1024, chunk_overlap=0.5
-                            )
-
-    def connect_to_vector_store(self, connection_string, collection_name, pre_delete_collection):
-        """
-        Establishes a connection to the vector database.
-
-        Args:
-            connection_string (str): The connection string for the vector database.
-            collection_name (str): The name of the collection within the vector database.
-        """
-
-        logging.info("Establishing connection to pgvector vector store for data ingestor")
-        self._vector_store = PGVector(embedding_function=self._embedding_llm,
-                                collection_name=collection_name,
-                                connection_string=connection_string,
-                                pre_delete_collection = pre_delete_collection,
-                                )
 
     def _initialize_summarizer(self):
         """
@@ -177,10 +150,9 @@ class DataIngestor:
             split_documents[idx].metadata['company_name'] = company_name
         return self._map_reduce_chain.run(input_documents=split_documents, company_name = company_name, information_to_extract = information_to_extract)
 
-    def add(self, text, company_name, keywords):
+    def process(self, text, company_name, keywords):
         """
-        Preprocesses, summarizes, and adds the given text to the vector database.
-
+        Preprocesses, summarizes, the given text
         Args:
             text (str): The text content representing the scraped data.
             company: The company associated with the text.
@@ -195,11 +167,4 @@ class DataIngestor:
             logging.info("Summarizing the text for vector database")
             summarized_content = self._summarize(text, company_name, keywords)
             
-            logging.info("Adding documents into the vector database")
-            
-            split_docs = self._db_text_splitter.create_documents([summarized_content])
-            if len(split_docs) > 4:
-                logging.warning(f"Too many chunks were made for summarization: {len(split_docs)}")
-            self._vector_store.add_documents(split_docs)
-            token_consumption = cb
-        return summarized_content, token_consumption
+        return summarized_content
