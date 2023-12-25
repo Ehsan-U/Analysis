@@ -44,14 +44,14 @@ class Summarizer:
         Args:
             model_name (str): The name of the OpenAI model to be used.
         """
-        logging.info("Establishing connection to open ai models for data ingestor")
+        logging.info("Establishing connection to open ai models for summarization")
         try: 
             self._llm = ChatOpenAI(model_name= model_name, temperature=0)
             self._embedding_llm = OpenAIEmbeddings(
                             model="text-embedding-ada-002",
                         )
         except Exception as excep:
-            logging.error(f"Error establishing connection to open ai models for ingestor: {excep}")
+            logging.error(f"Error establishing connection to open ai models for summarization: {excep}")
 
     def _create_content_extraction_list(self, company_name: str, keywords: list):
         final_string = ""

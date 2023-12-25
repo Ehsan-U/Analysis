@@ -25,6 +25,7 @@ setup_dict = {
     "db_name": os.environ["db_name"],
     "collection_name": os.environ["collection_name"],
 }
+
 logging.info("Intializing database connection")
 db = MongoDBManager(setup_dict)
 
@@ -32,7 +33,7 @@ setup_dict = {
     "openAI_model_name": "gpt-3.5-turbo-1106",
 }
 
-logging.info("Intializing RAG engine")
+logging.info("Intializing summarization engine")
 summarizer = Summarizer(setup_dict)
 
 logging.info("Intializing Email processor")
