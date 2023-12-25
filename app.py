@@ -42,7 +42,7 @@ email_processor = EmailProcesssor(setup_dict)
 logging.info("Intializing Translator")
 translator = Translator(setup_dict)
 
-logging.info("Intializing Translator")
+logging.info("Intializing Domain Recognizer")
 domain_recognizer = DomainRecognizer(setup_dict)
 
 @app.route('/analyze', methods=["POST"])
@@ -132,7 +132,6 @@ def process_domains():
     domain = domain_recognizer.recognize_company_domain(company_name, domains)
 
     return jsonify({company_name: domain})
-
 
 if __name__ == '__main__':
     app.run( debug=True, port=5000)
