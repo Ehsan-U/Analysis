@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import re
+import json
 
 def connect_to_token_df():
 
@@ -21,6 +22,14 @@ def connect_to_token_df():
     
     return df
 
+def isCharacterPresent(string):
+    string = "ALFA ACCIAI S.P.A."
+    for char in string:
+        if char.isalpha():
+            return True
+    return False
+
+
 def get_domains(summary):
     # main_path = "/home/sawaiz/Documents/Lab/In Progress/Ibatu/data_analysis_api/results_content/set_3/summarized_text"
     # file_paths = os.listdir(main_path)
@@ -34,9 +43,6 @@ def get_domains(summary):
     domains = [s.replace('@', '') for s in matches]
     domains = [item for item in domains if item.lower() != "none"]
     return domains
-
-import re
-import json
 
 def extract_information(text, keywords):
     information = dict()
@@ -61,3 +67,4 @@ def extract_information(text, keywords):
         else:
             information[key] = content
     return information
+

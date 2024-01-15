@@ -2,16 +2,15 @@ from langchain.prompts import ChatPromptTemplate
 # Chain 1
 first_prompt = ChatPromptTemplate.from_template(
 """
-Given the set of company email addresses delimited by triple backticks identify all the email addresses that are for company employees. These employee emails have the names of employees in them. 
-Make sure to not included any generic email address for a product or department.
-Example emails that I am looking for are like the folowing email addresses which have some reference to the employee names: johnDoe@mckinsey.com, j.doe@ibm.com, john.d@tata.co.in 
-Note: These names can be from any language and culture so anything email address has a name in it then keep it.
-Only output the email addresses that you think have the names of company employees in them.
-```
-{docs}
-```
-Just identify the email addreses and do not output anything else.
-If you do not find any email addresses that have the names of employees then just output NONE
+Companies usually give their employees their own company email when they join. These emails are usually built using the names of the employees. For example, if the employee name is oskar martinez, his email could of the form: oskar@company_domain.com, oskarmartinez@company_domain.com, o.martinez@company_domain.com, m.oskar@company_domain.com, moskar@company_domain.com, and omartinez@company_domain.com
+Now you are tasked to find such emails from a given list of emails. The email addresses are delimited by triple backticks. You have to identify all the email addresses have the names of the employee in them in some form. 
+The names in the emails can be from any language.
+Any generic email address that have the name of a product, job title, country or department etc such as sales@sama.bs.it, xxx@sama.bs.it, mexico@marcegaglia.com, financial@ibm.co.uk, director@ibm.co.uk are not required since we only trying to analyze emails with employee's personal name in it. Only output the email addresses that you believe to have the names of company employees in them. 
+Just identify the email addresses and do not output anything else. If you do not find any email addresses in the set of emails addresses that have the names of employees in them below then just output NONE
+
+Input emails: ``` {docs} ```
+
+Make sure to include any email you find from the Input emails above that has the first name, last name, or their name initials in the email addresses in your answer
 Helpful Answer in text format:
 """
 )
@@ -19,62 +18,39 @@ Helpful Answer in text format:
 # chain 2
 second_prompt = ChatPromptTemplate.from_template(
 """
-If you see NONE written in the text delimited by triple angle brackets then just output NONE and disregard any instruction you read below.
-
-Given the following set of company email addresses delimited by triple angle brackets, identity the common pattern the company uses to build their employee 
-emails. Since these are emails for the same company, they all have the same domain. I understand that so do not talk about it.
-Only talk about the local-part which is the piece of email before the @ sign. I want to understand the pattern there.
-
-Example results for reference:
-Example Input emails: 
-a.giovannelli@alfaacciai.it
-u.dragani@alfaacciai.it
-Results:
-The common pattern for these company email addresses is:
-`[first initial].[last name]@alfaacciai.it`
-Example Input emails: 
-NONE
-Results:
-NONE
-
-Note: In these examples, it does not explain the alfacciai.it domain part, It only explains the local part.
-Note: If it reads NONE then it just outputs NONE 
-If you cannot identify any emails, then just output NONE
-
-<<<
+Input Emails: 
+###
 {emails}
-<<<
+###
 
+Companies usually have a pattern with which they make the emails of their employees when they join. It is related to the names of the employees.
+Given a list of employee emails delimited by triple hashtags, analyze the pattern individually and then in conclusion, find the most commonly found pattern among the emails.
 
-Only use the emails in this message as reference. Do no include any email address you previously processed
-Output NONE IF THERE ARE NO EMAILS PRESENT IN THE TEXT DELIMITED BY triple backticks
-Helpful Answer:
+You have two headings to output:
+1. Individual email analysis one by one
+-Email address:
+-Email structure:
+2. Conclusion
+-Single most common pattern found:
+
+If you cannot identify any pattern in the given emails, then just output NONE in that section
+Helpful Answer in Text format:
 """
 )
 
-# chain 2
-third_prompt = ChatPromptTemplate.from_template(
+
+from langchain.prompts import PromptTemplate
+
+third_prompt_template = """
+You are given an identified email structure (delimited by triple backticks) for a particular email list (delimited by triple hashtags) below. You are tasked to find if the identified pattern matches most of the email list or not.
+If the identified email structure is correct, then output it. Otherwise, output the correct structure.
+
+identified email Structure: ### {structure} ###
+Email list:``` {emails} ```
+
+Verfied email structure in comma seperated list:
 """
-If you see NONE written in the text delimited by triple backticks below then just output NONE and disregard any instruction you read below.
 
-Using the patterns you have just identified, replace it with the following keys: 
-[First Name]: for referring the first name
-[Last Name]: for referring the last name
-[First Name Intial]: for referring the intial of first name
-[Last Name Initial]: for referring the initial of last name
-
-I want to make sure the format is consistent for all the pattern email generated, so replace subtext with appropriate keys
-Keep all punctutations or symbols used in the same place.
-
-```
-{patterns}
-```
-
-In the output, just write modified pattern email address. Do not write anything else
-In the text delimited by triple backticks, if there is NONE written then your answer should be just NONE
-I need the output in comma seperated list.
-
-Helpful Answer:
-"""
-)
+input_vars = ["structure", "emails"]
+third_prompt = PromptTemplate(input_variables=input_vars, template=third_prompt_template)
 

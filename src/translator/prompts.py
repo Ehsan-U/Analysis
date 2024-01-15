@@ -12,7 +12,7 @@ Only translate the content, never output any extra word. For each line below, ju
 {text}
 ```
 
-Translated titles: 
+Translated titles in a comma seperated list: 
 """
 
 input_vars = ["company", "text"]
@@ -34,17 +34,17 @@ translation_prompt = PromptTemplate(input_variables=input_vars, template=transla
 
 # """
 
-translation_template = """
-For the company called: {company}
-Given the set of pharses in different languages delimited by triple backticks, Make sure that all of them are converted to English.
-I want the output as a comma seperated list for python.
-Make sure that the number of translated pharses are the same as the original number of pharses. Hence, do not skip any pharse to translate. 
-Only translate the content, never output any extra word. For each line below, just translate it.
+# translation_template = """
+# For the company called: {company}
+# Given the set of pharses in different languages delimited by triple backticks, Make sure that all of them are converted to English.
+# I want the output as a comma seperated list for python.
+# Make sure that the number of translated pharses are the same as the original number of pharses. Hence, do not skip any pharse to translate. 
+# Only translate the content, never output any extra word. For each line below, just translate it.
 
-```
-{text}
-```
+# ```
+# {text}
+# ```
 
-Translated titles: 
-"""
+# Translated titles: 
+# """
 

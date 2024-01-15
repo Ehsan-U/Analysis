@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 load_dotenv() #call this before importing RAG class
 
 from src.summarizer.summarization_tool import Summarizer
-from src.db_manager.mongo_db import MongoDBManager
 
 from src.logger import logging
 from langchain.callbacks import get_openai_callback
@@ -17,20 +16,11 @@ from src.logger import logging
 from src.utils import extract_information
 
 import os
-
 app = Flask(__name__)
 
 setup_dict = {
-    "connection_string" : os.environ["MONGO_CONNECTION_STRING"],
-    "db_name": os.environ["db_name"],
-    "collection_name": os.environ["collection_name"],
-}
-
-logging.info("Intializing database connection")
-db = MongoDBManager(setup_dict)
-
-setup_dict = {
     "openAI_model_name": "gpt-3.5-turbo-1106",
+     "debug" : True
 }
 
 logging.info("Intializing summarization engine")
@@ -45,39 +35,20 @@ translator = Translator(setup_dict)
 logging.info("Intializing Domain Recognizer")
 domain_recognizer = DomainRecognizer(setup_dict)
 
+
 @app.route('/analyze', methods=["POST"])
 def process_text():
-    data = request.get_json()
+    payload = request.get_json()
 
-    #Summarize all the information in the scrapped data
-    summary = summarizer.process(data["text"], data["company"], data["keywords"])
+    response_data = dict()
+    for company_name in data:
+        data = payload[company_name]
 
-    #Extract all information and make a dictionary with keywords as keys
-    response_data = extract_information(summary, data["keywords"])
+        #Summarize all the information in the scrapped data
+        summary = summarizer.process(data["text"], company_name, data["keywords"])
 
-    return jsonify(response_data)
-
-@app.route('/store_in_db', methods=["POST"])
-def ingest():
-    data = request.get_json()
-
-    #Ingest data into the database
-    #data["summary"] is the <keyword>: <extracted information> pairs
-    try:
-        db.upsert_data(data["company"], data["summary"])
-        response_data = {'message': 'Record created successfully'}
-    except Exception as excep:
-        logging.error(f"Error processing ingestion request, {excep}")
-        response_data = {'message': 'Record creation was not successful'}
-
-    return jsonify(response_data)
-
-@app.route('/retrieve_from_db', methods=["POST"])
-def retrieve():
-    data = request.get_json()
-
-    #retrieve a document through company name
-    response_data = db.retrieve(data["company"])
+        #Extract all information and make a dictionary with keywords as keys
+        response_data[company_name] = extract_information(summary, data["keywords"])
 
     return jsonify(response_data)
 
@@ -96,42 +67,51 @@ def process_emails():
 def process_titles():
     data = request.get_json()
     
+    response_data = dict()
     #get company name and prospects list extracted
     for key in data:
         company_name = key
         prospects = data[key]
 
-    #Extract all the titles from prospects
-    titles = []
-    for prospect in prospects:
-        titles.append(prospect["title"])
+        #Extract all the titles from prospects
+        titles = []
+        for prospect in prospects:
+            titles.append(prospect["title"])
 
-    # if there are no titles available then just return the same information back
-    if len(titles) == 0:
-        return jsonify({company_name: prospects})
-    
-    #Translate the titles and return a list of translated titles
-    translated_titles = translator.translate(company_name, titles)
+        # if there are no titles available then just return the same information back
+        if len(titles) == 0:
+            response_data[company_name] = prospects
+            
+        #Translate the titles and return a list of translated titles
+        translated_titles = translator.translate(company_name, titles)
 
-    #Replace the titles in those same positions
-    for i, prospect in enumerate(prospects):
-        prospect["title"] =  translated_titles[i]
+        #Replace the titles in those same positions
+        for i, prospect in enumerate(prospects):
+            prospect["title"] =  translated_titles[i]
 
-    return jsonify({company_name: prospects})
+        response_data[company_name] = prospects
+
+    return jsonify(response_data)
 
 @app.route('/filter_domains', methods=["POST"])
 def process_domains():
     data = request.get_json()
+    
     #company name as key and list of domains as value
-
+    domains = []
     for key in data:
         company_name = key
         domains = data[key]
 
-    #Recognize the company domain from a potential domains
-    domain = domain_recognizer.recognize_company_domain(company_name, domains)
+        #Recognize the company domain from a potential domains
+        domain = domain_recognizer.recognize_company_domain(company_name, domains)
+        domains.append(domain)
 
-    return jsonify({company_name: domain})
+    response_data = dict()
+    for i, key in enumerate(data):
+        response_data[key] = domains[i]
+    
+    return jsonify(response_data)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True, port=5000)
+    app.run(debug=True, port=5000)

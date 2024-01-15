@@ -22,12 +22,49 @@ from src.logger import logging
 import re
 
 class DomainRecognizer:
+    """
+    A class for recognizing the domain of a company given its name and a list of domains.
 
+    Attributes:
+        _llm (ChatOpenAI): An instance of the ChatOpenAI class for language model interaction.
+        _chain (LLMChain): An instance of the LLMChain class for processing and recognizing domains.
+
+    Methods:
+        __init__(self, user_settings: dict):
+            Initializes the DomainRecognizer object by connecting to the OpenAI language model and
+            initializing the domain recognition chain.
+
+        connect_to_llm(self, model_name: str):
+            Establishes a connection to OpenAI models for domain recognition.
+
+        _initialize_recognition_chain(self):
+            Initializes the domain recognition chain using the OpenAI language model.
+
+        _preprocess_domains(self, domains: list) -> list:
+            Preprocesses the input list of domains by removing empty strings and leading/trailing whitespaces.
+
+        recognize_company_domain(self, company_name, domains: list) -> list:
+            Recognizes the domain of a company given its name and a list of domains.
+
+    """
     def __init__(self, user_settings:dict):
+        """
+        Initializes the DomainRecognizer object.
+
+        Parameters:
+            user_settings (dict): A dictionary containing user settings, including the OpenAI model name.
+        """
+        self.debug = user_settings["debug"]
         self.connect_to_llm(user_settings["openAI_model_name"])
         self._initialize_recognition_chain()
 
     def connect_to_llm(self, model_name:str):
+        """
+        Establishes a connection to OpenAI models for domain recognition.
+
+        Parameters:
+            model_name (str): The name of the OpenAI language model to be used.
+        """
 
         logging.info("Establishing connection to open ai models for domain recognition")
         try:
@@ -44,6 +81,9 @@ class DomainRecognizer:
             logging.error(f"Error establishing connection to llm for domain recognition: {excep}")
 
     def _initialize_recognition_chain(self):
+        """
+        Initializes the domain recognition chain using the OpenAI language model.
+        """
         logging.info("Initializing domain recognition chain")
         try:
             output_parser = CommaSeparatedListOutputParser()        
@@ -52,10 +92,29 @@ class DomainRecognizer:
             logging.error(f"Error initializing recognition chain: {excep}")
     
     def _preprocess_domains(self, domains: list):
+        """
+        Preprocesses the input list of domains by removing empty strings and leading/trailing whitespaces.
+
+        Parameters:
+            domains (list): The list of domains to be preprocessed.
+
+        Returns:
+            list: The preprocessed list of domains.
+        """
         processed_titles = [domains[i].strip() for i in range(len(domains)) if domains[i].strip() != ""]
         return processed_titles
 
-    def recognize_company_domain(self, company_name, domains: list):
+    def recognize_company_domain(self, company_name: str, domains: list):
+        """
+        Recognizes the domain of a company given its name and a list of domains.
+
+        Parameters:
+            company_name: The name of the company.
+            domains (list): The list of domains associated with the company.
+
+        Returns:
+            list: The recognized domain(s) of the company.
+        """
         logging.info("Recognizing domains")
         try:
             #Remove domains are empty spaces
@@ -74,6 +133,8 @@ class DomainRecognizer:
 
         except Exception as excep:
             logging.error(f"Error while translating emails: {excep}")
+        
+        return []
 
 
 

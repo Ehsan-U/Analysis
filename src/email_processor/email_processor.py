@@ -26,24 +26,27 @@ class EmailProcesssor:
     This class processes emails using a chain of language models to identify and categorize patterns in the emails. It connects to a language model and defines a processing chain for analyzing email content.
     """
     def __init__(self, user_settings:dict):
-        self.connect_to_llm(user_settings["openAI_model_name"])
+        self.debug = user_settings["debug"]
+        self.model_name = user_settings["openAI_model_name"]
+        self._connect_to_llm(user_settings["openAI_model_name"])
         self._initialize_identification_chain()
 
-    def connect_to_llm(self, model_name:str):
+    def _connect_to_llm(self, model_name:str):
         """
         establish connection to the llm
         """
 
         logging.info("Establishing connection to open ai models for email processing")
         try:
-            self._llm = ChatOpenAI(model_name=model_name, temperature=0)
+            self._llm = ChatOpenAI(model_name=model_name, temperature=0, max_tokens=4094)
 
             messages = [
                         SystemMessage(
-                                content="You are a helpful assistant that specialize in identifying patterns in email addresses of a company. You are proficient in recognizing names in hindi, chinese, english, french, spanish, italian, german and more. You are able to expertly filter email addresses that belong to individuals in the company and identify patterns in the email address structure specifically in the local-part of the user email addresses."
+                                content="You are a helpful assistant that specialize in identifying patterns in email addresses of a company. You are proficient in recognizing names in any language: European, American, British, Indian, Russian, Chinese, Middle Eastern, Pakistani, Japanese, Korean etc. You are able to expertly filter email addresses given a criteria"
                         )
                         ]
             self._llm(messages)
+
         except Exception as excep:
             logging.error(f"Error establishing connection to llm for email processing: {excep}")
 
@@ -56,16 +59,15 @@ class EmailProcesssor:
 
         logging.info("Initializing email pattern recognition chains")
         try:
-            chain_one = LLMChain(llm=self._llm, prompt=first_prompt, output_key="emails")
-            chain_two = LLMChain(llm=self._llm, prompt=second_prompt, output_key="patterns")
+            self._chain_one = LLMChain(llm=self._llm, prompt=first_prompt, output_key="emails")
+            self._chain_two = LLMChain(llm=self._llm, prompt=second_prompt, output_key="patterns")
             
             output_parser = CommaSeparatedListOutputParser()        
-            chain_three = LLMChain(llm=self._llm, prompt=third_prompt, output_key = "final_result", output_parser=output_parser)
+            self._chain_three = LLMChain(llm=self._llm, prompt=third_prompt, output_key = "final_result", output_parser=output_parser,verbose=False)
             
-
-            self.main_chain = SimpleSequentialChain(chains=[chain_one, chain_two, chain_three],
-                                                verbose=True
-                                                )
+            # self.main_chain = SimpleSequentialChain(chains=[chain_one, chain_two, chain_three],
+            #                                     verbose=True
+            #                                     )
         except Exception as excep:
             logging.error(f"Error initializing chains: {excep}")
 
@@ -80,15 +82,55 @@ class EmailProcesssor:
             str: A post-processed string where certain placeholders and formats have been standardized.
         """
         #return none if no patterns were found
-        if patterns.strip().lower() == "NONE".lower():
+        if patterns.strip().lower() == "none":
             return None
 
-        patterns = patterns.strip().split("@")[0]
-        patterns = patterns.replace("[First Name]", "f")
-        patterns = patterns.replace("[Last Name]", "l")
-        patterns = patterns.replace("[First Name Initial]", "f1")
-        patterns = patterns.replace("[Last Name Initial]", "l1")
+        patterns = patterns.strip().lower().split("@")[0].strip()
+        
+        patterns = patterns.replace("company domain", "")
+        patterns = patterns.replace("companydomain", "")
+        patterns = patterns.replace("dot", ".")
+        patterns = patterns.replace("underscore", "_")
+        patterns = patterns.replace("dash", "-")
+        patterns = patterns.replace("hyphen", "-")
+        patterns = patterns.replace("{", "[")
+        patterns = patterns.replace("}", "]")
+        patterns = patterns.replace("(", "[")
+        patterns = patterns.replace(")", "]")
+        
+        patterns = patterns.replace("first name", "f")
+        patterns = patterns.replace("last name", "l")
+        patterns = patterns.replace("firstname", "f")
+        patterns = patterns.replace("lastname", "l")
+        patterns = patterns.replace("full first name", "f")
+        patterns = patterns.replace("full last name", "l")
+        patterns = patterns.replace("full firstname", "f")
+        patterns = patterns.replace("full lastname", "l")
+        patterns = patterns.replace("first name initial", "f1")
+        patterns = patterns.replace("last name initial", "l1")
+        patterns = patterns.replace("firstname initial", "f1")
+        patterns = patterns.replace("lastname initial", "l1")
+        patterns = patterns.replace("first initial", "f1")
+        patterns = patterns.replace("last initial", "l1")
+        patterns = patterns.replace("first letter of last name", "l1")
+        patterns = patterns.replace("first letter of first name", "f1")
+        patterns = patterns.replace("first letter of lastname", "l1")
+        patterns = patterns.replace("first letter of firstname", "f1")
+        patterns = patterns.replace("first initial of last name", "l1")
+        patterns = patterns.replace("first initial of first name", "f1")
+        patterns = patterns.replace("first initial of lastname", "l1")
+        patterns = patterns.replace("first initial of firstname", "f1")
+        patterns = patterns.replace("first", "f")
+        patterns = patterns.replace("last", "l")
+        patterns = patterns.replace("+", "")
+        patterns = patterns.replace("[", "")
+        patterns = patterns.replace("]", "")
+        patterns = patterns.replace(" ", "")
+        patterns = patterns.replace(",", ".")
 
+        if len(patterns) > 5:
+            return None
+        
         return patterns
 
     def process_emails(self, emails: list):
@@ -105,12 +147,23 @@ class EmailProcesssor:
         try:
             if len(emails) == 0:
                 return None
+
+            emails = "\n".join(emails)
             
             #Recieve output as comma seperated string.
-            patterns =  self.main_chain.run(emails)
+            filtered_emails =  self._chain_one.run(emails)
+            if filtered_emails.strip() == "NONE":
+                return None
+            
+            pattern_description =  self._chain_two.run(filtered_emails)
+            identified_pattern = pattern_description.split("Single most common pattern found:")[-1]
+            if pattern_description.strip() == "NONE":
+                return None
+            
+            patterns =  self._chain_three.run({"structure": identified_pattern,  "emails": filtered_emails})
 
             #take the first pattern only
-            patterns = patterns[0]
+            patterns = patterns[0]   
             
             return self._post_process_text(patterns)
         except Exception as excep:

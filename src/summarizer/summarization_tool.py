@@ -31,7 +31,7 @@ class Summarizer:
         Args:
             user_settings (dict): A dictionary containing settings for the ingestor, such as the OpenAI model name and collection name for the vector store.
         """
-
+        self.debug = user_settings["debug"]
         self._reduction_max_tokens = 4000
         self.connect_to_llm(user_settings["openAI_model_name"])
         self.define_summary_text_splitter()
@@ -72,37 +72,41 @@ class Summarizer:
         """
         Initializes the summarization process by setting up various chains and reducers for document processing and summarization.
         """
-        map_chain = LLMChain(llm=self._llm, prompt=map_prompt)
+        logging.info("Intializing map reduce chain")
+        try:
+            map_chain = LLMChain(llm=self._llm, prompt=map_prompt)
 
-        # Run chain
-        reduce_chain = LLMChain(llm=self._llm, prompt=reduce_prompt)
+            # Run chain
+            reduce_chain = LLMChain(llm=self._llm, prompt=reduce_prompt)
 
-        # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
-        combine_documents_chain = StuffDocumentsChain(
-            llm_chain=reduce_chain, document_variable_name="docs"
-        )
+            # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
+            combine_documents_chain = StuffDocumentsChain(
+                llm_chain=reduce_chain, document_variable_name="docs"
+            )
 
-        # Combines and iteravely reduces the mapped documents
-        reduce_documents_chain = ReduceDocumentsChain(
-            # This is final chain that is called.
-            combine_documents_chain=combine_documents_chain,
-            # If documents exceed context for `StuffDocumentsChain`
-            collapse_documents_chain=combine_documents_chain,
-            # The maximum number of tokens to group documents into.
-            token_max=self._reduction_max_tokens,
-        )
+            # Combines and iteravely reduces the mapped documents
+            reduce_documents_chain = ReduceDocumentsChain(
+                # This is final chain that is called.
+                combine_documents_chain=combine_documents_chain,
+                # If documents exceed context for `StuffDocumentsChain`
+                collapse_documents_chain=combine_documents_chain,
+                # The maximum number of tokens to group documents into.
+                token_max=self._reduction_max_tokens,
+            )
 
-        # Combining documents by mapping a chain over them, then combining results
-        self._map_reduce_chain = MapReduceDocumentsChain(
-            # Map chain
-            llm_chain=map_chain,
-            # Reduce chain
-            reduce_documents_chain=reduce_documents_chain,
-            # The variable name in the llm_chain to put the documents in
-            document_variable_name="docs",
-            # Return the results of the map steps in the output
-            return_intermediate_steps=False,
-        )
+            # Combining documents by mapping a chain over them, then combining results
+            self._map_reduce_chain = MapReduceDocumentsChain(
+                # Map chain
+                llm_chain=map_chain,
+                # Reduce chain
+                reduce_documents_chain=reduce_documents_chain,
+                # The variable name in the llm_chain to put the documents in
+                document_variable_name="docs",
+                # Return the results of the map steps in the output
+                return_intermediate_steps=False,
+            )
+        except Exception as excep:
+            logging.error(f"Error defining the map reduce chain {excep}")
 
     def _text_preprocessor(self, text):
         """
@@ -144,11 +148,15 @@ class Summarizer:
         Returns:
             The summarized content.
         """
-        information_to_extract = self._create_content_extraction_list(company_name, keywords)
-        split_documents = self._sum_text_splitter.create_documents([text])
-        for idx in range(len(split_documents)):
-            split_documents[idx].metadata['company_name'] = company_name
-        return self._map_reduce_chain.run(input_documents=split_documents, company_name = company_name, information_to_extract = information_to_extract)
+        logging.info("Summarizing content")
+        try:
+            information_to_extract = self._create_content_extraction_list(company_name, keywords)
+            split_documents = self._sum_text_splitter.create_documents([text])
+            for idx in range(len(split_documents)):
+                split_documents[idx].metadata['company_name'] = company_name
+            return self._map_reduce_chain.run(input_documents=split_documents, company_name = company_name, information_to_extract = information_to_extract)
+        except Exception as excep:
+            logging.error(f"Error summarizing content {excep}")
 
     def process(self, text, company_name, keywords):
         """
@@ -161,7 +169,6 @@ class Summarizer:
             A tuple containing the summarized content and token consumption information.
         """
         
-
         text = self._text_preprocessor(text)
         with get_openai_callback() as cb: 
             logging.info("Summarizing the text for vector database")
