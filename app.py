@@ -35,20 +35,15 @@ translator = Translator(setup_dict)
 logging.info("Intializing Domain Recognizer")
 domain_recognizer = DomainRecognizer(setup_dict)
 
-
 @app.route('/analyze', methods=["POST"])
 def process_text():
-    payload = request.get_json()
+    request_data = request.get_json()
 
-    response_data = dict()
-    for company_name in data:
-        data = payload[company_name]
+    #Summarize all the information in the scrapped data
+    summary = summarizer.process(request_data["text"], request_data['company'], [request_data["topic"]])
 
-        #Summarize all the information in the scrapped data
-        summary = summarizer.process(data["text"], company_name, data["keywords"])
-
-        #Extract all information and make a dictionary with keywords as keys
-        response_data[company_name] = extract_information(summary, data["keywords"])
+    #Extract all information and make a dictionary with keywords as keys
+    response_data = extract_information(summary, [request_data["topic"]])
 
     return jsonify(response_data)
 
