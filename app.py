@@ -46,7 +46,7 @@ def process_text():
 
     #Extract all information and make a dictionary with keywords as keys
     response_data = extract_information(summary, [request_data["topic"]])
-    response_data = {company_name: response_data}
+    # response_data = {company_name: response_data}
 
     return jsonify(response_data)
 
