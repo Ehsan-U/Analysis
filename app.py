@@ -39,11 +39,14 @@ domain_recognizer = DomainRecognizer(setup_dict)
 def process_text():
     request_data = request.get_json()
 
+    company_name = request_data['company']
+
     #Summarize all the information in the scrapped data
     summary = summarizer.process(request_data["text"], request_data['company'], [request_data["topic"]])
 
     #Extract all information and make a dictionary with keywords as keys
     response_data = extract_information(summary, [request_data["topic"]])
+    response_data = {company_name: response_data}
 
     return jsonify(response_data)
 
