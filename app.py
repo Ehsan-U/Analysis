@@ -35,10 +35,10 @@ domain_recognizer = DomainRecognizer(setup_dict)
 @app.post('/analyze')
 async def process_text(request_data: dict):
     # Summarize all the information in the scrapped data
-    summary = await summarizer.process(request_data["text"], request_data['company'], request_data["keywords"])
+    summary = await summarizer.process(request_data["text"], request_data['company'], [request_data["topic"]])
 
     # Extract all information and make a dictionary with keywords as keys
-    response_data = await extract_information(summary, request_data["keywords"])
+    response_data = await extract_information(summary, [request_data["topic"]])
 
     return response_data
 
@@ -82,8 +82,7 @@ async def process_titles(data: dict):
 async def process_domains(data: dict):
     # company name as key and list of domains as value
     domains = []
-    for key, potential_domains in data.items():
-        company_name = key
+    for company_name, potential_domains in data.items():
 
         # Recognize the company domain from potential domains
         domain = await domain_recognizer.recognize_company_domain(company_name, potential_domains)
