@@ -1,15 +1,13 @@
 import logging
 import os
-from datetime import datetime
 
-LOG_FILE=f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
-logs_path=os.path.join(os.getcwd(),"logs",LOG_FILE)
-os.makedirs(logs_path,exist_ok=True)
 
-LOG_FILE_PATH=os.path.join(logs_path,LOG_FILE)
+logging.basicConfig(level=logging.WARNING,  # Set higher level for root logger
+    format='=> %(levelname)s - %(module)s - %(asctime)s - %(message)s',
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(),  # Logs to the console
+    ])
 
-logging.basicConfig(
-    filename=LOG_FILE_PATH,
-    format="[ %(asctime)s ] %(lineno)d %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
+logger = logging.getLogger("Analysis")
+logger.setLevel(logging.DEBUG)  # Set DEBUG level for MarketResearch logger
