@@ -133,7 +133,7 @@ class EmailProcesssor:
         
         return patterns
 
-    def process_emails(self, emails: list):
+    async def process_emails(self, emails: list):
         """
         Processes a list of emails to identify patterns using the defined identification chain.
 

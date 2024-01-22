@@ -158,7 +158,7 @@ class Summarizer:
         except Exception as excep:
             logging.error(f"Error summarizing content {excep}")
 
-    def process(self, text, company_name, keywords):
+    async def process(self, text, company_name, keywords):
         """
         Preprocesses, summarizes, the given text
         Args:

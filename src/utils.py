@@ -44,7 +44,7 @@ def get_domains(summary):
     domains = [item for item in domains if item.lower() != "none"]
     return domains
 
-def extract_information(text, keywords):
+async def extract_information(text, keywords):
     information = dict()
     current_key = None
     pattern = re.compile(r'^\d+\.\s')

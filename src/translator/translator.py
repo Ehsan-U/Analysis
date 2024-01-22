@@ -131,7 +131,7 @@ class Translator:
         
         return titles
 
-    def translate(self, company_name: str, titles: list):
+    async def translate(self, company_name: str, titles: list):
         """
         Translates the titles of a company from their original language to English.
 

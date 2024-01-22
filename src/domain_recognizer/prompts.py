@@ -10,6 +10,7 @@ domains:
 ```
 {text}
 ```
+
 {company} domain:
 """
 

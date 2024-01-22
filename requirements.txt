@@ -1,5 +1,6 @@
 pandas
 numpy
+fastapi
 langchain==0.0.335
 openai==0.27.10
 dill

@@ -104,7 +104,7 @@ class DomainRecognizer:
         processed_titles = [domains[i].strip() for i in range(len(domains)) if domains[i].strip() != ""]
         return processed_titles
 
-    def recognize_company_domain(self, company_name: str, domains: list):
+    async def recognize_company_domain(self, company_name: str, domains: list):
         """
         Recognizes the domain of a company given its name and a list of domains.
 
@@ -116,6 +116,7 @@ class DomainRecognizer:
             list: The recognized domain(s) of the company.
         """
         logging.info("Recognizing domains")
+        company_name = company_name[0]
         try:
             #Remove domains are empty spaces
             domains = self._preprocess_domains(domains)
