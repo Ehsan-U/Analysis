@@ -8,7 +8,6 @@ from src.translator.translator import Translator
 from src.domain_recognizer.domain_recognizer import DomainRecognizer
 from src.logger import logging
 from src.utils import extract_information
-import uvicorn
 import os
 
 
@@ -91,7 +90,3 @@ async def process_domains(data: dict):
     response_data = {key: domain for key, domain in zip(data.keys(), domains)}
 
     return response_data
-
-
-if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", port=5000)
