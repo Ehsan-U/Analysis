@@ -90,6 +90,3 @@ async def process_domains(data: dict):
     response_data = {key: domain for key, domain in zip(data.keys(), domains)}
 
     return response_data
-
-if __name__ == '__main__':
-    uvicorn.run(app, host="127.0.0.1", port=5000)
