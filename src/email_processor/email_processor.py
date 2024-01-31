@@ -4,6 +4,7 @@ import openai
 load_dotenv()
 from langchain.chat_models import ChatOpenAI
 
+import ast
 
 from langchain.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -38,14 +39,18 @@ class EmailProcesssor:
 
         logging.info("Establishing connection to open ai models for email processing")
         try:
-            self._llm = ChatOpenAI(model_name=model_name, temperature=0, max_tokens=4094)
+            self._llm_1 = ChatOpenAI(model_name=model_name, temperature=0, max_tokens=4094)
+            self._llm_2 = ChatOpenAI(model_name=model_name, temperature=0, max_tokens=4094)
+            # self._llm_3 = ChatOpenAI(model_name=model_name, temperature=0, max_tokens=4094)
 
             messages = [
                         SystemMessage(
-                                content="You are a helpful assistant that specialize in identifying patterns in email addresses of a company. You are proficient in recognizing names in any language: European, American, British, Indian, Russian, Chinese, Middle Eastern, Pakistani, Japanese, Korean etc. You are able to expertly filter email addresses given a criteria"
-                        )
+                                content="You are a helpful assistant that specialize in identifying email addresses that have names of individuals in any language. \
+                                    You are proficient in recognizing names in any language: European, American, British, Indian, Russian, Chinese, Middle Eastern, Pakistani, Japanese, Korean etc. \
+                                        You are able to expertly filter email addresses given a criteria"
+                                    )
                         ]
-            self._llm(messages)
+            self._llm_1(messages)
 
         except Exception as excep:
             logging.error(f"Error establishing connection to llm for email processing: {excep}")
@@ -59,11 +64,10 @@ class EmailProcesssor:
 
         logging.info("Initializing email pattern recognition chains")
         try:
-            self._chain_one = LLMChain(llm=self._llm, prompt=first_prompt, output_key="emails")
-            self._chain_two = LLMChain(llm=self._llm, prompt=second_prompt, output_key="patterns")
-            
+            self._chain_one = LLMChain(llm=self._llm_1, prompt=first_prompt, output_key="emails")
+            self._chain_two = LLMChain(llm=self._llm_2, prompt=second_prompt, output_key="patterns")
             output_parser = CommaSeparatedListOutputParser()        
-            self._chain_three = LLMChain(llm=self._llm, prompt=third_prompt, output_key = "final_result", output_parser=output_parser,verbose=False)
+            # self._chain_three = LLMChain(llm=self._llm_3, prompt=third_prompt, output_key = "final_result", output_parser=output_parser,verbose=False)
             
             # self.main_chain = SimpleSequentialChain(chains=[chain_one, chain_two, chain_three],
             #                                     verbose=True
@@ -95,9 +99,21 @@ class EmailProcesssor:
         patterns = patterns.replace("hyphen", "-")
         patterns = patterns.replace("{", "[")
         patterns = patterns.replace("}", "]")
-        patterns = patterns.replace("(", "[")
-        patterns = patterns.replace(")", "]")
         
+        patterns = patterns.replace("[first name initials (2 initials)]", "f1m1")
+        patterns = patterns.replace("[first name initial (1 initial)]", "f1")
+        
+        patterns = patterns.replace("[first name]", "f")
+        patterns = patterns.replace("[middle name]", "m")
+        patterns = patterns.replace("[last name]", "l")
+
+        patterns = patterns.replace("[firstname]", "f")
+        patterns = patterns.replace("[middlename]", "m")
+        patterns = patterns.replace("[lastname]", "l")
+
+        patterns = patterns.replace("[first initial]", "f1")
+        patterns = patterns.replace("[last initial]", "l1")
+
         patterns = patterns.replace("first name", "f")
         patterns = patterns.replace("last name", "l")
         patterns = patterns.replace("firstname", "f")
@@ -123,12 +139,12 @@ class EmailProcesssor:
         patterns = patterns.replace("first", "f")
         patterns = patterns.replace("last", "l")
         patterns = patterns.replace("+", "")
-        patterns = patterns.replace("[", "")
-        patterns = patterns.replace("]", "")
         patterns = patterns.replace(" ", "")
         patterns = patterns.replace(",", ".")
+        patterns = patterns.replace("[", ".")
+        patterns = patterns.replace("]", "")
 
-        if len(patterns) > 5:
+        if len(patterns) > 9:
             return None
         
         return patterns
@@ -152,20 +168,18 @@ class EmailProcesssor:
             
             #Recieve output as comma seperated string.
             filtered_emails =  self._chain_one.run(emails)
-            if filtered_emails.strip() == "NONE":
+            if filtered_emails.strip().lower() == "none":
                 return None
             
             pattern_description =  self._chain_two.run(filtered_emails)
-            identified_pattern = pattern_description.split("Single most common pattern found:")[-1]
-            if pattern_description.strip() == "NONE":
+            identified_patterns = pattern_description.split(":")[-1]
+            if identified_patterns.strip().lower() == "none":
                 return None
-            
-            patterns =  self._chain_three.run({"structure": identified_pattern,  "emails": filtered_emails})
 
-            #take the first pattern only
-            patterns = patterns[0]   
+            # patterns =  self._chain_three.run({"structure": pattern_description})
+            pattern = identified_patterns
             
-            return self._post_process_text(patterns)
+            return self._post_process_text(pattern)
         except Exception as excep:
             logging.error(f"Error while processing emails: {excep}")
 

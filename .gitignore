@@ -6,6 +6,7 @@ token_details/
 .env
 test.py
 test.txt
+data/
 
 # Exclude self
 .gitignore
