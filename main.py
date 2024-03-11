@@ -1,15 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+
+
+from src.email_processor.email_processor import EmailProcesssor
+from src.logger import logging
+
 from dotenv import load_dotenv
 load_dotenv()
-
-from src.summarizer.summarization_tool import Summarizer
-from src.email_processor.email_processor import EmailProcesssor
-from src.translator.translator import Translator
-from src.domain_recognizer.domain_recognizer import DomainRecognizer
-from src.logger import logging
-from src.utils import extract_information
-import os
-import uvicorn
 
 app = FastAPI()
 
